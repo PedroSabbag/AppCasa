@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Casa Inteligente</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #0f0f14;
+      --surface:   #1a1a24;
+      --surface2:  #22222f;
+      --border:    rgba(255,255,255,0.07);
+      --green:     #00e5a0;
+      --green-dim: rgba(0,229,160,0.12);
+      --red:       #ff4f4f;
+      --red-dim:   rgba(255,79,79,0.12);
+      --text:      #f0f0f8;
+      --muted:     #6b6b80;
+      --radius:    14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-left h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-left p  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .conn-pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      transition: all .3s; cursor: pointer;
+    }
+    .conn-pill.online  { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+    .conn-pill.offline { color: var(--muted); }
+    .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .conn-pill.online .conn-dot { animation: blink 2s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── Connect bar ── */
+    .connect-wrap { padding: 16px; padding-bottom: 0; }
+    .connect-bar {
+      display: flex; gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-bottom: 4px;
+    }
+    .connect-bar input {
+      flex: 1; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 12px; font-size: 14px;
+      font-family: 'DM Mono', monospace;
+      color: var(--text); outline: none; transition: border .2s;
+      -webkit-appearance: none;
+    }
+    .connect-bar input:focus { border-color: var(--green); }
+    .connect-bar input::placeholder { color: var(--muted); }
+    .btn-connect {
+      padding: 10px 16px; background: var(--green); color: #000;
+      border: none; border-radius: 10px; font-size: 13px;
+      font-weight: 700; cursor: pointer; white-space: nowrap;
+      -webkit-appearance: none; min-width: 90px;
+    }
+    .btn-connect:active { opacity: .7; }
+
+    /* ── Content ── */
+    .content { padding: 16px; padding-bottom: 40px; }
+
+    .label {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px;
+      margin: 20px 0 10px;
+    }
+    .label:first-child { margin-top: 4px; }
+
+    /* ── LED Grid ── */
+    .led-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .led-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 14px;
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
+      user-select: none;
+      -webkit-user-select: none;
+      position: relative;
+      overflow: hidden;
+      /* toque mínimo recomendado pelo Google */
+      min-height: 80px;
+    }
+    .led-card::before {
+      content: ''; position: absolute; inset: 0;
+      opacity: 0; background: var(--green-dim); transition: opacity .2s;
+      pointer-events: none;
+    }
+    .led-card.on { border-color: var(--green); }
+    .led-card.on::before { opacity: 1; }
+    .led-card:active { opacity: .75; }
+
+    .led-emoji { font-size: 24px; margin-bottom: 10px; display: block; pointer-events: none; }
+    .led-name { font-size: 13px; font-weight: 700; position: relative; pointer-events: none; }
+    .led-card.on .led-name { color: var(--green); }
+    .led-qty { font-size: 11px; color: var(--muted); margin-top: 2px; position: relative; pointer-events: none; }
+    .led-stat { font-size: 11px; color: var(--muted); margin-top: 2px; position: relative; pointer-events: none; }
+    .led-card.on .led-stat { color: var(--green); opacity: .8; }
+
+    .pill-toggle {
+      display: inline-flex; align-items: center;
+      margin-top: 12px; width: 40px; height: 22px;
+      border-radius: 11px; background: var(--surface2);
+      position: relative; transition: background .2s;
+      pointer-events: none; flex-shrink: 0;
+    }
+    .led-card.on .pill-toggle { background: var(--green); }
+    .pill-toggle::after {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; left: 3px; transition: left .2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+    .led-card.on .pill-toggle::after { left: 21px; }
+
+    /* ── Sala card largo ── */
+    .led-card.wide {
+      grid-column: 1 / -1;
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px;
+    }
+    .led-card.wide .led-emoji { font-size: 28px; margin-bottom: 0; }
+    .led-card.wide .led-info { flex: 1; }
+    .led-card.wide .pill-toggle { margin-top: 0; }
+
+    /* ── Alarme ── */
+    .alarm-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      transition: all .3s;
+    }
+    .alarm-card.armed { border-color: var(--red); background: var(--red-dim); }
+    .alarm-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .alarm-info h3 { font-size: 15px; font-weight: 700; }
+    .alarm-card.armed .alarm-info h3 { color: var(--red); }
+    .alarm-info p { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .alarm-card.armed .alarm-info p { color: var(--red); opacity: .7; }
+    .alarm-icon { font-size: 30px; }
+    .alarm-icon.armed { animation: shake .5s infinite; }
+    @keyframes shake { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }
+    .alarm-btn {
+      width: 100%; padding: 16px; border-radius: 10px; border: none;
+      font-size: 14px; font-weight: 700;
+      font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .2s;
+      -webkit-appearance: none; min-height: 52px;
+    }
+    .alarm-btn.arm    { background: var(--red); color: #fff; }
+    .alarm-btn.disarm { background: var(--surface2); color: var(--green); border: 1px solid var(--green); }
+    .alarm-btn:active { opacity: .7; }
+
+    /* ── Aviso offline ── */
+    .offline-note {
+      font-size: 11px; color: var(--muted);
+      text-align: center; margin-top: 6px;
+      padding: 0 4px;
+    }
+    .offline-note span { color: #f0a500; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 20px; border-radius: 20px;
+      font-size: 13px; font-weight: 500; opacity: 0;
+      transition: all .3s; pointer-events: none; z-index: 100;
+      white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>Casa Inteligente</h1>
+    <p>ESP8266 · NodeMCU</p>
+  </div>
+  <div class="conn-pill offline" id="connPill">
+    <div class="conn-dot"></div>
+    <span id="connLabel">Offline</span>
+  </div>
+</div>
+
+<!-- Conectar -->
+<div class="connect-wrap">
+  <div class="connect-bar">
+    <input type="text" id="ipInput" placeholder="10.0.0.160" value="10.0.0.160" inputmode="url" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+    <button class="btn-connect" id="btnConnect">Conectar</button>
+  </div>
+  <p class="offline-note" id="offlineNote"><span>⚠ Offline:</span> conecte ao ESP8266 para controlar os dispositivos</p>
+</div>
+
+<!-- Conteúdo -->
+<div class="content">
+
+  <div class="label">Iluminação</div>
+  <div class="led-grid">
+
+    <!-- Sala -->
+    <div class="led-card wide" id="led-0">
+      <span class="led-emoji">🛋</span>
+      <div class="led-info">
+        <div class="led-name">Sala</div>
+        <div class="led-qty">4 LEDs</div>
+        <div class="led-stat" id="stat-0">Desligado</div>
+      </div>
+      <div class="pill-toggle"></div>
+    </div>
+
+    <!-- Quarto 1 -->
+    <div class="led-card" id="led-1">
+      <span class="led-emoji">🛏</span>
+      <div class="led-name">Quarto 1</div>
+      <div class="led-qty">1 LED</div>
+      <div class="led-stat" id="stat-1">Desligado</div>
+      <div class="pill-toggle"></div>
+    </div>
+
+    <!-- Quarto 2 -->
+    <div class="led-card" id="led-2">
+      <span class="led-emoji">🛏</span>
+      <div class="led-name">Quarto 2</div>
+      <div class="led-qty">1 LED</div>
+      <div class="led-stat" id="stat-2">Desligado</div>
+      <div class="pill-toggle"></div>
+    </div>
+
+    <!-- Banheiro -->
+    <div class="led-card" id="led-3">
+      <span class="led-emoji">🚿</span>
+      <div class="led-name">Banheiro</div>
+      <div class="led-qty">1 LED</div>
+      <div class="led-stat" id="stat-3">Desligado</div>
+      <div class="pill-toggle"></div>
+    </div>
+
+    <!-- Área externa -->
+    <div class="led-card" id="led-4">
+      <span class="led-emoji">🌳</span>
+      <div class="led-name">Área Externa</div>
+      <div class="led-qty">1 LED</div>
+      <div class="led-stat" id="stat-4">Desligado</div>
+      <div class="pill-toggle"></div>
+    </div>
+
+  </div>
+
+  <!-- Alarme -->
+  <div class="label">Segurança</div>
+  <div class="alarm-card" id="alarmCard">
+    <div class="alarm-top">
+      <div class="alarm-info">
+        <h3 id="alarmTitle">Alarme desarmado</h3>
+        <p id="alarmSub">Sistema em espera</p>
+      </div>
+      <span class="alarm-icon" id="alarmIcon">🔕</span>
+    </div>
+    <button class="alarm-btn arm" id="alarmBtn">Armar Alarme</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let ip        = '10.0.0.160';
+let connected = false;
+let leds      = [false, false, false, false, false];
+let alarmOn   = false;
+let pollTimer = null;
+const names   = ['Sala', 'Quarto 1', 'Quarto 2', 'Banheiro', 'Área Externa'];
+
+/* ── Utils ── */
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function setConnected(val) {
+  connected = val;
+  const pill = document.getElementById('connPill');
+  pill.className = 'conn-pill ' + (val ? 'online' : 'offline');
+  document.getElementById('connLabel').textContent = val ? 'Online' : 'Offline';
+  document.getElementById('offlineNote').style.display = val ? 'none' : '';
+}
+
+/* ── API ── */
+async function api(endpoint) {
+  try {
+    const res = await fetch(`http://${ip}${endpoint}`, { signal: AbortSignal.timeout(3000) });
+    return res.ok ? await res.text() : null;
+  } catch (e) {
+    setConnected(false);
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    toast('❌ Conexão perdida');
+    return null;
+  }
+}
+
+/* ── Conectar ── */
+async function connect() {
+  ip = document.getElementById('ipInput').value.trim() || ip;
+  const btn = document.getElementById('btnConnect');
+  btn.textContent = '...';
+  btn.disabled = true;
+  try {
+    const res  = await fetch(`http://${ip}/status`, { signal: AbortSignal.timeout(4000) });
+    const data = await res.json();
+    setConnected(true);
+    toast('✅ ESP8266 conectado');
+    syncState(data);
+    startPoll();
+  } catch (e) {
+    setConnected(false);
+    toast('❌ Não foi possível conectar');
+  }
+  btn.textContent = 'Conectar';
+  btn.disabled = false;
+}
+
+function syncState(d) {
+  if (d.leds)              d.leds.forEach((v, i) => { leds[i] = v; updateLEDUI(i); });
+  if (d.alarm !== undefined) { alarmOn = d.alarm; updateAlarmUI(); }
+}
+
+function startPoll() {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    try {
+      const res  = await fetch(`http://${ip}/status`, { signal: AbortSignal.timeout(2000) });
+      const data = await res.json();
+      syncState(data);
+    } catch { setConnected(false); clearInterval(pollTimer); pollTimer = null; }
+  }, 2000);
+}
+
+/* ── LEDs ── */
+async function toggleLED(id) {
+  if (!connected) { toast('⚠️ Conecte ao ESP8266 primeiro!'); return; }
+  leds[id] = !leds[id];
+  updateLEDUI(id);
+  toast(`${leds[id] ? '💡' : '🌑'} ${names[id]} ${leds[id] ? 'ligado' : 'desligado'}`);
+  await api(`/led?id=${id}&state=${leds[id] ? 1 : 0}`);
+}
+
+function updateLEDUI(id) {
+  const card = document.getElementById(`led-${id}`);
+  if (!card) return;
+  card.classList.toggle('on', leds[id]);
+  document.getElementById(`stat-${id}`).textContent = leds[id] ? 'Ligado' : 'Desligado';
+}
+
+/* ── Alarme ── */
+async function toggleAlarm() {
+  if (!connected) { toast('⚠️ Conecte ao ESP8266 primeiro!'); return; }
+  alarmOn = !alarmOn;
+  updateAlarmUI();
+  toast(alarmOn ? '🚨 Alarme armado!' : '✅ Alarme desarmado');
+  await api(`/alarm?state=${alarmOn ? 1 : 0}`);
+}
+
+function updateAlarmUI() {
+  const card = document.getElementById('alarmCard');
+  card.classList.toggle('armed', alarmOn);
+  document.getElementById('alarmTitle').textContent = alarmOn ? 'ALARME ARMADO' : 'Alarme desarmado';
+  document.getElementById('alarmSub').textContent   = alarmOn ? 'Monitorando movimento...' : 'Sistema em espera';
+  const btn = document.getElementById('alarmBtn');
+  btn.className   = 'alarm-btn ' + (alarmOn ? 'disarm' : 'arm');
+  btn.textContent = alarmOn ? 'Desarmar' : 'Armar Alarme';
+  const icon = document.getElementById('alarmIcon');
+  icon.textContent = alarmOn ? '🚨' : '🔕';
+  icon.className   = 'alarm-icon' + (alarmOn ? ' armed' : '');
+}
+
+/* ── Event listeners (touch-safe) ── */
+function addTap(el, fn) {
+  let startX, startY, moved = false;
+  el.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    moved  = false;
+  }, { passive: true });
+  el.addEventListener('touchmove', e => {
+    if (Math.abs(e.touches[0].clientX - startX) > 8 ||
+        Math.abs(e.touches[0].clientY - startY) > 8) moved = true;
+  }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (!moved) { e.preventDefault(); fn(); }
+  });
+  el.addEventListener('click', fn); // fallback desktop
+}
+
+// LED cards
+for (let i = 0; i < 5; i++) {
+  (id => {
+    const card = document.getElementById(`led-${id}`);
+    if (card) addTap(card, () => toggleLED(id));
+  })(i);
+}
+
+// Botão conectar
+addTap(document.getElementById('btnConnect'), connect);
+
+// Botão alarme
+addTap(document.getElementById('alarmBtn'), toggleAlarm);
+</script>
+</body>
+</html>
